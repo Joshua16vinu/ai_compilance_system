@@ -1,19 +1,54 @@
 'use client'
 
 import { useState } from 'react'
+import axios from 'axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { UploadZone } from '@/features/upload/UploadZone'
 import { AnalysisView } from '@/features/analysis/AnalysisView'
-import { BarChart3, Database, ShieldAlert, FileKey } from 'lucide-react'
+import { DomainSelectionView } from '@/features/analysis/DomainSelectionView'
+import { SingleDomainAnalysisView } from '@/features/analysis/SingleDomainAnalysisView'
+import { BarChart3, Database, ShieldAlert, FileKey, Loader2 } from 'lucide-react'
 import { RmfCycleChart, TaxonomyChart, NistDistributionChart } from '@/components/StandardsCharts'
 import { PolicyDetailsModal, Policy } from '@/components/features/analysis/PolicyDetailsModal'
 
 export default function EnterpriseDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [uploadedDomains, setUploadedDomains] = useState<any[]>([])
+  const [analysisResult, setAnalysisResult] = useState<any>(null)
+
+  // existing state for compatibility/sidebar
   const [report, setReport] = useState<any>(null)
   const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+
+  const handleUploadSuccess = (data: any[]) => {
+    // The API returns an array of domains
+    setUploadedDomains(data)
+    setActiveTab('domain-selection')
+  }
+
+  const handleDomainSelect = async (domainObj: any) => {
+    setIsAnalyzing(true)
+    try {
+      const res = await axios.post('http://127.0.0.1:5000/api/analyze-domain', domainObj)
+      setAnalysisResult(res.data)
+      setActiveTab('scan')
+    } catch (error) {
+      console.error("Analysis failed", error)
+      // Ideally show an error toast here
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  const handleReset = () => {
+    setReport(null)
+    setAnalysisResult(null)
+    setUploadedDomains([])
+    setActiveTab('dashboard')
+  }
 
   return (
     <div className="flex h-screen overflow-hidden selection:bg-[#F29F67]/30 selection:text-[#F29F67] font-sans">
@@ -33,7 +68,7 @@ export default function EnterpriseDashboard() {
           <AnimatePresence mode="wait">
 
             {/* VIEW: DASHBOARD */}
-            {activeTab === 'dashboard' && !report && (
+            {activeTab === 'dashboard' && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -64,10 +99,7 @@ export default function EnterpriseDashboard() {
                   </div>
 
                   <div className="w-full h-full flex flex-col justify-center">
-                    <UploadZone onSuccess={(data) => {
-                      setReport(data)
-                      setActiveTab('scan')
-                    }} />
+                    <UploadZone onSuccess={handleUploadSuccess} />
                   </div>
                 </div>
 
@@ -88,8 +120,6 @@ export default function EnterpriseDashboard() {
                     <NistDistributionChart />
                   </div>
                 </div>
-
-
 
                 {/* SECURITY DOMAINS REFERENCE */}
                 <div className="space-y-8">
@@ -141,31 +171,39 @@ export default function EnterpriseDashboard() {
               </motion.div>
             )}
 
+            {/* VIEW: DOMAIN SELECTION */}
+            {activeTab === 'domain-selection' && (
+              <div className="max-w-[1400px] mx-auto">
+                {isAnalyzing ? (
+                  <div className="flex flex-col items-center justify-center h-[60vh] space-y-6">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-[#F29F67] blur-xl opacity-20 animate-pulse" />
+                      <Loader2 className="w-16 h-16 text-[#F29F67] animate-spin relative z-10" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white">Analyzing Domain Security</h2>
+                    <p className="text-slate-400">Comparing against NIST SP 800-53 controls...</p>
+                  </div>
+                ) : (
+                  <DomainSelectionView
+                    domains={uploadedDomains}
+                    onSelect={handleDomainSelect}
+                    onBack={handleReset}
+                  />
+                )}
+              </div>
+            )}
+
             {/* VIEW: ANALYSIS */}
-            {(activeTab === 'scan' || report) && (
+            {activeTab === 'scan' && analysisResult && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="max-w-[1400px] mx-auto"
               >
-                {!report ? (
-                  <div className="flex flex-col items-center justify-center h-[60vh] text-slate-500">
-                    <BarChart3 className="w-16 h-16 mb-4 opacity-20" />
-                    <p className="text-lg font-medium">No active analysis session</p>
-                    <p className="text-sm">Please upload a policy document to begin</p>
-                    <button
-                      onClick={() => setActiveTab('dashboard')}
-                      className="mt-6 px-6 py-2 bg-[#3B8FF3] hover:bg-[#3B8FF3]/80 text-white rounded font-medium transition-colors"
-                    >
-                      Return to Dashboard
-                    </button>
-                  </div>
-                ) : (
-                  <AnalysisView data={report} onReset={() => {
-                    setReport(null)
-                    setActiveTab('dashboard')
-                  }} />
-                )}
+                <SingleDomainAnalysisView
+                  data={analysisResult}
+                  onReset={handleReset}
+                />
               </motion.div>
             )}
 
@@ -225,3 +263,4 @@ function WorkflowStep({ number, title, text }: any) {
     </div>
   )
 }
+
