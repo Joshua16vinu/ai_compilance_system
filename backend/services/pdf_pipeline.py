@@ -13,6 +13,6 @@ def process_pdf(pdf_path: str):
 
     cleaned_text = clean_text(raw_text)
     chunks = chunk_by_domain(cleaned_text)
-
+    print(f"Extracted {len(chunks)} domain-specific chunks from PDF")
     print("pdf pipeline completed")
     return chunks

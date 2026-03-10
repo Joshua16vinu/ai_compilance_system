@@ -40,6 +40,7 @@ def analyze_gap_for_domain(domain: str, text: str, use_semantic_search=True):
     )
 
     response = call_llm(prompt)
+    print(f"LLM response for domain '{domain}': {response}")
 
     result = extract_json(response)
 

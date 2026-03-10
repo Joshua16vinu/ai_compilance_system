@@ -7,12 +7,23 @@ from backend.llm.mistral_client import call_llm
 
 def extract_json(text: str):
     """Extract JSON object from LLM output safely."""
+
+    # 1️⃣ Remove markdown code fences
+    text = re.sub(r"```json", "", text)
+    text = re.sub(r"```", "", text)
+
+    # 2️⃣ Extract JSON block
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if not match:
         return None
+
+    json_str = match.group().strip()
+
     try:
-        return json.loads(match.group())
-    except json.JSONDecodeError:
+        return json.loads(json_str)
+    except json.JSONDecodeError as e:
+        print("JSON parsing error:", e)
+        print("Problematic JSON:", json_str[:500])
         return None
 
 
