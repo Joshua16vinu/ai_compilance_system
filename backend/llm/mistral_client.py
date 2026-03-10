@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-MODEL_PATH = PROJECT_ROOT / "models" / "Mistral-7B-Instruct-v0.3-Q5_K_M.gguf"
+MODEL_PATH = PROJECT_ROOT / "models" / "phi-3-mini-4k-instruct-q4_k_m.gguf"
 
 llm = Llama(
     model_path=str(MODEL_PATH),
