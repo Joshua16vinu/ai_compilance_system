@@ -17,9 +17,13 @@ def analyze_domain():
     """
 
     data = request.get_json()
+    print("Incoming payload:", data)
 
     domain = data.get("domain")
     text = data.get("text")
+
+    if "subdomains" in data:
+        print("Ignoring subdomains for domain-level analysis")
 
     if not domain or not text:
         return Response("Invalid request payload", status=400)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -12,6 +12,7 @@ import { SingleDomainAnalysisView } from '@/features/analysis/SingleDomainAnalys
 import { BarChart3, Database, ShieldAlert, FileKey, Loader2 } from 'lucide-react'
 import { RmfCycleChart, TaxonomyChart, NistDistributionChart } from '@/components/StandardsCharts'
 import { PolicyDetailsModal, Policy } from '@/components/features/analysis/PolicyDetailsModal'
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 
 export default function EnterpriseDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -19,18 +20,33 @@ export default function EnterpriseDashboard() {
   const [analysisResult, setAnalysisResult] = useState<any>(null)
 
   // existing state for compatibility/sidebar
-  const [report, setReport] = useState<any>(null)
   const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+
+  // Load from cache on mount
+  useEffect(() => {
+    const cached = localStorage.getItem('uploadedDomains')
+    if (cached) {
+      try {
+        setUploadedDomains(JSON.parse(cached))
+      } catch (e) {
+        console.error("Failed to parse cached domains", e)
+      }
+    }
+  }, [])
 
   const handleUploadSuccess = (data: any[]) => {
     // The API returns an array of domains
     setUploadedDomains(data)
+    localStorage.setItem('uploadedDomains', JSON.stringify(data))
     setActiveTab('domain-selection')
   }
 
   const handleDomainSelect = async (domainObj: any) => {
     setIsAnalyzing(true)
+    // Small delay to let the UI update and show the loader smoothly
+    await new Promise(r => setTimeout(r, 500))
+
     try {
       const res = await axios.post('http://127.0.0.1:5000/api/analyze-domain', domainObj)
       setAnalysisResult(res.data)
@@ -43,10 +59,16 @@ export default function EnterpriseDashboard() {
     }
   }
 
+  const handleReturnToDomains = () => {
+    setAnalysisResult(null)
+    setActiveTab('domain-selection')
+  }
+
   const handleReset = () => {
-    setReport(null)
+    // This is a full reset
     setAnalysisResult(null)
     setUploadedDomains([])
+    localStorage.removeItem('uploadedDomains')
     setActiveTab('dashboard')
   }
 
@@ -77,10 +99,10 @@ export default function EnterpriseDashboard() {
               >
                 <div className="space-y-4 text-center lg:text-left mt-4">
                   <h1 className="text-4xl lg:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-500 tracking-tight mb-2 drop-shadow-sm">
-                    Security Control Center
+                    Secure AI Policy Compliance & Gap Analysis System
                   </h1>
                   <p className="text-base lg:text-lg max-w-3xl leading-relaxed text-slate-400 mx-auto lg:mx-0">
-                    Next-generation policy analysis platform aligned with NIST SP 800-53 standards.
+                    Next-generation policy analysis platform running entirely offline for complete data privacy.
                   </p>
                 </div>
 
@@ -175,13 +197,8 @@ export default function EnterpriseDashboard() {
             {activeTab === 'domain-selection' && (
               <div className="max-w-[1400px] mx-auto">
                 {isAnalyzing ? (
-                  <div className="flex flex-col items-center justify-center h-[60vh] space-y-6">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-[#F29F67] blur-xl opacity-20 animate-pulse" />
-                      <Loader2 className="w-16 h-16 text-[#F29F67] animate-spin relative z-10" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-white">Analyzing Domain Security</h2>
-                    <p className="text-slate-400">Comparing against NIST SP 800-53 controls...</p>
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                    <LoadingOverlay />
                   </div>
                 ) : (
                   <DomainSelectionView
@@ -202,7 +219,7 @@ export default function EnterpriseDashboard() {
               >
                 <SingleDomainAnalysisView
                   data={analysisResult}
-                  onReset={handleReset}
+                  onReset={handleReturnToDomains}
                 />
               </motion.div>
             )}

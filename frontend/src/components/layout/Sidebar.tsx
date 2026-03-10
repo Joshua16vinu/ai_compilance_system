@@ -21,8 +21,6 @@ export function Sidebar({ setActiveTab, activeTab }: any) {
     const items = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
         { id: 'scan', icon: Search, label: 'Audit Log' },
-        { id: 'reports', icon: Files, label: 'Reports' },
-        { id: 'settings', icon: Settings, label: 'Configuration' },
     ]
 
     return (
