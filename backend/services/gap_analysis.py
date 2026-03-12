@@ -7,59 +7,122 @@ from backend.services.nist_retrieval import (
     format_nist_chunks_for_prompt
 )
 
+
 def extract_json(text: str):
     """Safely extract JSON from LLM output."""
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if not match:
+    if not text:
         return None
+
     try:
-        return json.loads(match.group())
-    except json.JSONDecodeError:
+        # remove markdown json fences if present
+        text = text.replace("```json", "").replace("```", "").strip()
+
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not match:
+            return None
+
+        json_text = match.group()
+
+        # attempt to fix truncated JSON
+        open_braces = json_text.count("{")
+        close_braces = json_text.count("}")
+
+        if close_braces < open_braces:
+            json_text += "}" * (open_braces - close_braces)
+
+        return json.loads(json_text)
+
+    except Exception as e:
+        print("JSON extraction error:", e)
         return None
 
 
 def analyze_gap_for_domain(domain: str, text: str, use_semantic_search=True):
     """
-    🔥 FAST GAP ANALYSIS — ONE CALL PER DOMAIN
+    FAST GAP ANALYSIS — ONE CALL PER DOMAIN
     """
 
-    # 🔽 Limit retrieval to keep speed high
-    nist_records = fetch_similar_nist_records(
-        policy_text=text,
-        subdomain=domain,
-        top_k=3
-    )
+    try:
 
-    formatted_nist_chunks = format_nist_chunks_for_prompt(nist_records)
+        # Retrieve relevant NIST records
+        nist_records = fetch_similar_nist_records(
+            policy_text=text,
+            subdomain=domain,
+            top_k=3
+        )
 
-    prompt = GAP_ANALYSIS_PROMPT.format(
-        domain=domain,
-        subdomain=domain,
-        organization_policy=text,
-        nist_chunks=formatted_nist_chunks
-    )
+        formatted_nist_chunks = format_nist_chunks_for_prompt(nist_records)
 
-    response = call_llm(prompt)
-    print(f"LLM response for domain '{domain}': {response}")
+        prompt = GAP_ANALYSIS_PROMPT.format(
+            domain=domain,
+            subdomain=domain,
+            organization_policy=text,
+            nist_chunks=formatted_nist_chunks
+        )
 
-    result = extract_json(response)
+        response = call_llm(prompt)
 
-    if not result:
+        print(f"\n===== LLM OUTPUT =====\n{response}\n======================")
+
+        result = extract_json(response)
+
+        if not result:
+            print("⚠️ Failed to parse JSON from LLM response")
+
+            return {
+                "domain": domain,
+                "subdomain": domain,
+                "gap_analysis": [],
+                "revised_policy": {
+                    "introduction": "",
+                    "statements": [],
+                    "compliance_notes": ""
+                },
+                "implementation_roadmap": {
+                    "short_term": [],
+                    "mid_term": [],
+                    "long_term": []
+                },
+                "nist_records_used": []
+            }
+
+        # Ensure required fields exist
+        result.setdefault("domain", domain)
+        result.setdefault("subdomain", domain)
+        result.setdefault("gap_analysis", [])
+        result.setdefault("revised_policy", {})
+        result.setdefault("implementation_roadmap", {})
+
+        result["nist_records_used"] = [
+            {
+                "id": r.get("id"),
+                "source": r.get("metadata", {}).get("source_file"),
+                "similarity": r.get("similarity")
+            }
+            for r in nist_records
+        ]
+
+        print(f"✅ Gap analysis completed for domain: {domain}")
+
+        return result
+
+    except Exception as e:
+        print("❌ Gap analysis error:", str(e))
+
         return {
             "domain": domain,
-            "error": "Failed to parse LLM response",
-            "raw_response": response
+            "subdomain": domain,
+            "gap_analysis": [],
+            "revised_policy": {
+                "introduction": "",
+                "statements": [],
+                "compliance_notes": ""
+            },
+            "implementation_roadmap": {
+                "short_term": [],
+                "mid_term": [],
+                "long_term": []
+            },
+            "error": str(e),
+            "nist_records_used": []
         }
-
-    result["nist_records_used"] = [
-        {
-            "id": r.get("id"),
-            "source": r.get("metadata", {}).get("source_file"),
-            "similarity": r.get("similarity")
-        }
-        for r in nist_records
-    ]
-
-    print(f"✅ Gap analysis completed for domain: {domain}")
-
-    return result

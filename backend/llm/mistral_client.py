@@ -36,7 +36,7 @@ def call_llm(prompt: str) -> str:
         ],
         options={
             "temperature": 0.0,
-            "num_predict": 350
+            "num_predict": 900
         }
     )
 

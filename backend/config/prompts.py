@@ -79,9 +79,11 @@ At the end, return the result as JSON in the following format:
 }}
 """
 
-
 GAP_ANALYSIS_PROMPT = """
-You are a cybersecurity compliance expert specializing in NIST framework alignment.
+You are a cybersecurity compliance auditor specializing in NIST framework alignment.
+
+Your task is to analyze an organization's security policy and compare it against the
+relevant NIST controls provided.
 
 Domain: {domain}
 Subdomain: {subdomain}
@@ -96,63 +98,75 @@ Relevant NIST Policy Extracts:
 {nist_chunks}
 \"\"\"
 
-Tasks:
-1. Identify gaps where the organization policy does not meet NIST requirements.
-2. List each gap clearly and reference the relevant NIST control or principle.
-3. Provide revised policy statements to close each identified gap.
-4. Create a clear implementation roadmap with short-term, mid-term, and long-term actions.
+Audit Guidelines:
 
-Output Format:
-Return a JSON object with the following structure:
+- Compare the organization's policy with the provided NIST controls.
+- Identify missing, incomplete, or weak controls.
+- Policies that contain only general statements (e.g., "implement appropriate controls")
+  should be treated as incomplete if specific procedures or mechanisms are not defined.
+- A gap exists when the policy does not explicitly address a requirement present in the NIST controls.
+- Do NOT invent gaps that are not supported by the comparison.
+
+Tasks:
+
+1. Identify all security gaps where the policy does not fully satisfy the NIST controls.
+2. For each gap, reference the relevant NIST control when possible.
+3. Provide improved policy statements that close the identified gaps.
+4. Provide a practical remediation roadmap.
+
+Output Rules:
+
+- Return ONLY valid JSON.
+- Do NOT include explanations outside JSON.
+- If no gaps are found, return an empty "gap_analysis" list.
+- If "gap_analysis" is empty, the roadmap sections should contain empty lists.
+
+Output format:
+
 {{
   "domain": "{domain}",
   "subdomain": "{subdomain}",
   "gap_analysis": [
     {{
       "gap_id": "GAP-001",
-      "description": "Brief description of the gap",
-      "nist_reference": "Reference to NIST control or principle",
-      "severity": "High/Medium/Low",
-      "impact": "Description of impact if not addressed"
+      "description": "Description of the missing or incomplete control",
+      "nist_reference": "Relevant NIST control identifier",
+      "severity": "High | Medium | Low",
+      "impact": "Security or compliance impact"
     }}
   ],
   "revised_policy": {{
-    "introduction": "Revised policy introduction",
+    "introduction": "Improved policy introduction aligned with NIST standards",
     "statements": [
-      "Policy statement 1",
-      "Policy statement 2"
+      "Improved policy statement addressing the gap"
     ],
-    "compliance_notes": "Notes on how this addresses NIST requirements"
+    "compliance_notes": "Explanation of how the improvements align with NIST"
   }},
   "implementation_roadmap": {{
     "short_term": [
       {{
-        "action": "Action description",
+        "action": "Immediate remediation action",
         "timeline": "0-3 months",
-        "priority": "Critical/High/Medium/Low",
+        "priority": "Critical | High | Medium | Low",
         "resources": "Required resources"
       }}
     ],
     "mid_term": [
       {{
-        "action": "Action description",
+        "action": "Medium-term improvement",
         "timeline": "3-6 months",
-        "priority": "Critical/High/Medium/Low",
+        "priority": "High | Medium",
         "resources": "Required resources"
       }}
     ],
     "long_term": [
       {{
-        "action": "Action description",
+        "action": "Long-term improvement",
         "timeline": "6-12 months",
-        "priority": "Critical/High/Medium/Low",
+        "priority": "Medium | Low",
         "resources": "Required resources"
       }}
     ]
   }}
 }}
-
-Be specific, actionable, and reference exact NIST controls where applicable.
-Give answer in 15 lines or less.
 """
-
