@@ -49,7 +49,7 @@ backend/data/uploads/
 *.tmp
 *.bak
 *.swp
-data/
+
 # ===============================
 # Jupyter / Misc
 # ===============================

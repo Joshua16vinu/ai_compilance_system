@@ -5,6 +5,7 @@ import axios from 'axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
+import { StandardsSidebar } from '@/components/layout/StandardsSidebar'
 import { UploadZone } from '@/features/upload/UploadZone'
 import { AnalysisView } from '@/features/analysis/AnalysisView'
 import { DomainSelectionView } from '@/features/analysis/DomainSelectionView'
@@ -234,6 +235,7 @@ export default function EnterpriseDashboard() {
         />
 
       </div>
+      <StandardsSidebar />
     </div>
   )
 }
