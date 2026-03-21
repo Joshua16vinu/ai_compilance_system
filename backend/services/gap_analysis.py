@@ -6,7 +6,7 @@ from backend.services.nist_retrieval import (
     fetch_similar_nist_records,
     format_nist_chunks_for_prompt
 )
-
+from backend.config.prompts import GAP_ONLY_PROMPT, REVISED_POLICY_PROMPT 
 
 def extract_json(text: str):
     """Safely extract JSON from LLM output."""
@@ -125,4 +125,131 @@ def analyze_gap_for_domain(domain: str, text: str, use_semantic_search=True):
             },
             "error": str(e),
             "nist_records_used": []
+        }
+    import json
+ # add these imports
+
+
+def analyze_gap_only(domain: str, text: str):
+    """
+    STEP 1 — Gap analysis only. No revised policy.
+    Returns gap_analysis list + nist_records_used.
+    """
+    try:
+        nist_records = fetch_similar_nist_records(
+            policy_text=text,
+            subdomain=domain,
+            top_k=5
+        )
+
+        formatted_nist_chunks = format_nist_chunks_for_prompt(nist_records)
+        print("chunks retrieved")
+        prompt = GAP_ONLY_PROMPT.format(
+            domain=domain,
+            subdomain=domain,
+            organization_policy=text,
+            nist_chunks=formatted_nist_chunks
+        )
+
+        response = call_llm(prompt)
+        print(f"\n===== GAP ONLY LLM OUTPUT =====\n{response}\n===============================")
+
+        result = extract_json(response)
+
+        if not result:
+            print("⚠️ Failed to parse JSON from gap-only LLM response")
+            return {
+                "domain": domain,
+                "subdomain": domain,
+                "gap_analysis": [],
+                "nist_records_used": []
+            }
+
+        result.setdefault("domain", domain)
+        result.setdefault("subdomain", domain)
+        result.setdefault("gap_analysis", [])
+
+        result["nist_records_used"] = [
+            {
+                "id": r.get("id"),
+                "source": r.get("metadata", {}).get("source_file"),
+                "similarity": r.get("similarity")
+            }
+            for r in nist_records
+        ]
+
+        print(f"✅ Gap-only analysis completed for domain: {domain}")
+        return result
+
+    except Exception as e:
+        print("❌ Gap-only analysis error:", str(e))
+        return {
+            "domain": domain,
+            "subdomain": domain,
+            "gap_analysis": [],
+            "nist_records_used": [],
+            "error": str(e)
+        }
+
+
+def generate_revised_policy(domain: str, text: str, gap_analysis: list):
+    """
+    STEP 2 — Revised policy generation using gap analysis output + original policy.
+    """
+    try:
+        gap_analysis_str = json.dumps(gap_analysis, indent=2)
+
+        prompt = REVISED_POLICY_PROMPT.format(
+            domain=domain,
+            subdomain=domain,
+            organization_policy=text,
+            gap_analysis=gap_analysis_str
+        )
+
+        response = call_llm(prompt)
+        print(f"\n===== REVISED POLICY LLM OUTPUT =====\n{response}\n=====================================")
+
+        result = extract_json(response)
+
+        if not result:
+            print("⚠️ Failed to parse JSON from revised policy LLM response")
+            return {
+                "domain": domain,
+                "subdomain": domain,
+                "revised_policy": {
+                    "introduction": "",
+                    "statements": [],
+                    "compliance_notes": ""
+                },
+                "implementation_roadmap": {
+                    "short_term": [],
+                    "mid_term": [],
+                    "long_term": []
+                }
+            }
+
+        result.setdefault("domain", domain)
+        result.setdefault("subdomain", domain)
+        result.setdefault("revised_policy", {})
+        result.setdefault("implementation_roadmap", {})
+
+        print(f"✅ Revised policy generated for domain: {domain}")
+        return result
+
+    except Exception as e:
+        print("❌ Revised policy generation error:", str(e))
+        return {
+            "domain": domain,
+            "subdomain": domain,
+            "revised_policy": {
+                "introduction": "",
+                "statements": [],
+                "compliance_notes": ""
+            },
+            "implementation_roadmap": {
+                "short_term": [],
+                "mid_term": [],
+                "long_term": []
+            },
+            "error": str(e)
         }

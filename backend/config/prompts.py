@@ -170,3 +170,116 @@ Output format:
   }}
 }}
 """
+
+GAP_ONLY_PROMPT = """
+You are a cybersecurity compliance auditor specializing in NIST framework alignment.
+
+Your task is to analyze an organization's security policy and identify gaps against the relevant NIST controls.
+
+Domain: {domain}
+Subdomain: {subdomain}
+
+Organization Policy:
+\"\"\"
+{organization_policy}
+\"\"\"
+
+Relevant NIST Policy Extracts:
+\"\"\"
+{nist_chunks}
+\"\"\"
+
+Audit Guidelines:
+- Compare the organization's policy with the provided NIST controls.
+- Identify missing, incomplete, or weak controls.
+- Policies with only general statements (e.g., "implement appropriate controls") should be treated as incomplete.
+- A gap exists when the policy does not explicitly address a requirement present in the NIST controls.
+- Do NOT invent gaps not supported by the comparison.
+
+Output Rules:
+- Return ONLY valid JSON.
+- Do NOT include explanations outside JSON.
+- If no gaps are found, return an empty "gap_analysis" list.
+
+Output format:
+{{
+  "domain": "{domain}",
+  "subdomain": "{subdomain}",
+  "gap_analysis": [
+    {{
+      "gap_id": "GAP-001",
+      "description": "Description of the missing or incomplete control",
+      "nist_reference": "Relevant NIST control identifier",
+      "severity": "High | Medium | Low",
+      "impact": "Security or compliance impact"
+    }}
+  ]
+}}
+"""
+
+REVISED_POLICY_PROMPT = """
+You are a cybersecurity policy writer specializing in NIST framework alignment.
+
+Your task is to generate a revised policy and implementation roadmap based on the identified gaps and the original organization policy.
+
+Domain: {domain}
+Subdomain: {subdomain}
+
+Original Organization Policy:
+\"\"\"
+{organization_policy}
+\"\"\"
+
+Identified Gaps:
+\"\"\"
+{gap_analysis}
+\"\"\"
+
+Tasks:
+1. Write improved policy statements that directly close each identified gap.
+2. Provide a practical remediation roadmap with short, mid, and long-term actions.
+
+Output Rules:
+- Return ONLY valid JSON.
+- Do NOT include explanations outside JSON.
+- If gap_analysis is empty, return empty statements and roadmap lists.
+
+Output format:
+{{
+  "domain": "{domain}",
+  "subdomain": "{subdomain}",
+  "revised_policy": {{
+    "introduction": "Improved policy introduction aligned with NIST standards",
+    "statements": [
+      "Improved policy statement addressing each gap"
+    ],
+    "compliance_notes": "Explanation of how improvements align with NIST"
+  }},
+  "implementation_roadmap": {{
+    "short_term": [
+      {{
+        "action": "Immediate remediation action",
+        "timeline": "0-3 months",
+        "priority": "Critical | High | Medium | Low",
+        "resources": "Required resources"
+      }}
+    ],
+    "mid_term": [
+      {{
+        "action": "Medium-term improvement",
+        "timeline": "3-6 months",
+        "priority": "High | Medium",
+        "resources": "Required resources"
+      }}
+    ],
+    "long_term": [
+      {{
+        "action": "Long-term improvement",
+        "timeline": "6-12 months",
+        "priority": "Medium | Low",
+        "resources": "Required resources"
+      }}
+    ]
+  }}
+}}
+"""
