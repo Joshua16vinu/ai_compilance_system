@@ -71,7 +71,7 @@ def analyze_gap():
         return Response("Invalid request payload", status=400)
 
     try:
-        result = analyze_gap_only(domain=domain, text=text)
+        result = analyze_gap_for_domain(domain=domain, text=text)
     except Exception as e:
         return Response(
             f"ERROR: Gap analysis failed\n{str(e)}",

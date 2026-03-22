@@ -136,3 +136,121 @@ def format_nist_chunks_for_prompt(records: list) -> str:
         formatted.append(chunk)
     
     return "\n\n".join(formatted)
+
+def extract_query_keywords(query: str):
+    return [w.lower() for w in query.split() if len(w) > 2]
+
+def keyword_search(query: str, top_k: int = 5):
+    query_keywords = extract_query_keywords(query)
+
+    all_data = _collection.get(include=["documents", "metadatas"])
+
+    records = []
+
+    for doc_id, doc, meta in zip(
+        all_data["ids"],
+        all_data["documents"],
+        all_data["metadatas"]
+    ):
+        text = doc.lower()
+
+        match_score = sum(1 for q in query_keywords if q in text)
+
+        if match_score > 0:
+            records.append({
+                "id": doc_id,
+                "text": doc,
+                "metadata": meta,
+                "score": match_score,
+                "source": "keyword"
+            })
+
+    records = sorted(records, key=lambda x: x["score"], reverse=True)
+
+    return records[:top_k]
+
+def hybrid_fetch_nist_records(policy_text: str, domain: str = None):
+    embedder = load_embedding_model()
+
+    # 🔹 Semantic (top 10)
+    query_embedding = embedder.encode(policy_text).tolist()
+
+    query_params = {
+        "query_embeddings": [query_embedding],
+        "n_results": 10,
+        "include": ["documents", "metadatas", "distances"]
+    }
+
+    if domain:
+        query_params["where"] = {"domain": domain}
+
+    semantic_results = _collection.query(**query_params)
+
+    combined = {}
+
+    # Add semantic
+    for doc_id, doc, meta, dist in zip(
+        semantic_results["ids"][0],
+        semantic_results["documents"][0],
+        semantic_results["metadatas"][0],
+        semantic_results["distances"][0]
+    ):
+        similarity = 1 - dist
+
+        combined[doc_id] = {
+            "id": doc_id,
+            "text": doc,
+            "metadata": meta,
+            "score": similarity
+        }
+    print(f"\n📌 Semantic Results Count: {len(semantic_results['ids'][0])}")
+    # 🔹 Keyword (top 5)
+    keyword_results = keyword_search(policy_text, top_k=5)
+    print(f"\n📌 Keyword Results Count: {len(keyword_results)}")
+    for r in keyword_results:
+        if r["id"] in combined:
+            combined[r["id"]]["score"] += r["score"]
+        else:
+            combined[r["id"]] = r
+    
+    print("\n🔗 Merging Semantic + Keyword Results (UNION)")
+    print(f"\n📊 Total Combined Chunks: {len(combined)}")
+    # 🔹 Sort final
+    final_results = sorted(combined.values(), key=lambda x: x["score"], reverse=True)
+    
+    return final_results[:10]
+
+
+def extract_relevant_text(records, query):
+    print("\n✂️ [STEP 2] Sentence Extraction Started")
+    embedder = load_embedding_model()
+    query_embedding = embedder.encode(query)
+
+    query_words = query.lower().split()
+    extracted = []
+    total_sentences = 0
+    matched_sentences = 0
+    for r in records:
+     sentences = r["text"].split(".")
+     total_sentences += len(sentences)
+
+     for s in sentences:
+        s_clean = s.strip()
+
+        if len(s_clean) < 10:
+            continue
+
+        keyword_match = any(q in s_clean.lower() for q in query_words)
+
+        sentence_embedding = embedder.encode(s_clean)
+        similarity = sum(a*b for a, b in zip(query_embedding, sentence_embedding))
+
+        if keyword_match or similarity > 0.5:
+            matched_sentences += 1
+            print(f"✅ Matched: {s_clean[:80]}... | Score: {similarity:.4f}")
+            extracted.append((s_clean, similarity))
+
+    extracted = sorted(extracted, key=lambda x: x[1], reverse=True)
+    print(f"\n📊 Total Sentences Scanned: {total_sentences}")
+    print(f"📊 Matched Sentences: {matched_sentences}")
+    return [s for s, _ in extracted[:20]]

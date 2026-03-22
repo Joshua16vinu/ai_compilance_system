@@ -4,7 +4,9 @@ from backend.config.prompts import GAP_ANALYSIS_PROMPT
 from backend.llm.mistral_client import call_llm
 from backend.services.nist_retrieval import (
     fetch_similar_nist_records,
-    format_nist_chunks_for_prompt
+    format_nist_chunks_for_prompt,
+     hybrid_fetch_nist_records,
+    extract_relevant_text
 )
 from backend.config.prompts import GAP_ONLY_PROMPT, REVISED_POLICY_PROMPT 
 
@@ -45,14 +47,19 @@ def analyze_gap_for_domain(domain: str, text: str, use_semantic_search=True):
     try:
 
         # Retrieve relevant NIST records
-        nist_records = fetch_similar_nist_records(
-            policy_text=text,
-            subdomain=domain,
-            top_k=3
-        )
+        # nist_records = fetch_similar_nist_records(
+        #     policy_text=text,
+        #     subdomain=domain,
+        #     top_k=3
+        # )
+        nist_records = hybrid_fetch_nist_records(
+    policy_text=text,
+    domain=domain
+)
+        # formatted_nist_chunks = format_nist_chunks_for_prompt(nist_records)
+        relevant_sentences = extract_relevant_text(nist_records, text)
 
-        formatted_nist_chunks = format_nist_chunks_for_prompt(nist_records)
-
+        formatted_nist_chunks = "\n".join(relevant_sentences[:20])
         prompt = GAP_ANALYSIS_PROMPT.format(
             domain=domain,
             subdomain=domain,
