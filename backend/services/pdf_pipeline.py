@@ -12,6 +12,7 @@ def process_pdf(pdf_path: str):
         raise ValueError("No text extracted from PDF")
 
     cleaned_text = clean_text(raw_text)
+    print(f"Cleaned text:\n{cleaned_text}")
     chunks = chunk_by_domain(cleaned_text)
     print(f"Extracted {len(chunks)} domain-specific chunks from PDF")
     print("pdf pipeline completed")
