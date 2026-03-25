@@ -6,7 +6,7 @@ from tqdm import tqdm
 # Q5_K_M (5.1GB)
 MODEL_URL = "https://huggingface.co/bartowski/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3-Q5_K_M.gguf"
 MODEL_FILE = "models/Mistral-7B-Instruct-v0.3-Q5_K_M.gguf"
-
+#hello
 os.makedirs("models", exist_ok=True)
 
 print("Downloading Q5_K_M (5GB)...")

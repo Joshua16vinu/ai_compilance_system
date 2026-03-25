@@ -3,7 +3,7 @@ import json
 from flask import Blueprint, request, current_app, Response
 from backend.utils.file_utils import allowed_file
 from backend.services.pdf_pipeline import process_pdf
-
+import traceback
 upload_bp = Blueprint("upload", __name__)
 
 @upload_bp.route("/upload-pdf", methods=["POST"])
@@ -34,6 +34,8 @@ def upload_pdf():
         domain_chunks = process_pdf(file_path)
     except Exception as e:
         return Response(
+            
+           
             f"ERROR: PDF processing failed\n{str(e)}",
             mimetype="text/plain",
             status=500

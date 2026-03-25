@@ -38,7 +38,7 @@ def chunk_by_domain(policy_text: str) -> list:
       "subdomains": [...]
     }
     """
-
+    print("Starting domain chunking...")
     prompt = DOMAIN_CHUNKING_PROMPT.format(policy_text=policy_text)
     response = call_llm(prompt)
 
