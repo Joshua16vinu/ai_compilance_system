@@ -23,5 +23,5 @@ with open(MODEL_FILE, 'wb') as f, tqdm(
     for data in response.iter_content(chunk_size=1024):
         size = f.write(data)
         bar.update(size)
-
+#hkdf
 print(f"✅ Saved: {MODEL_FILE}")
