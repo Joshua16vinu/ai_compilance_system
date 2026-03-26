@@ -1,7 +1,7 @@
 import json
 from flask import Blueprint, request, Response
-from backend.services.gap_analysis import analyze_gap_for_domain, generate_revised_policy, analyze_gap_only, generate_revised_policy_stream
-
+from backend.services.gap_analysis import analyze_gap_for_domain, generate_revised_policy, analyze_gap_only
+from backend.services.gap_analysis import generate_roadmap_stream , generate_revised_policy_stream
 analyze_bp = Blueprint("analyze", __name__)
 
 @analyze_bp.route("/analyze-domain", methods=["POST"])
@@ -151,6 +151,7 @@ def revised_policy():
             stream = generate_revised_policy_stream(text, gap_analysis)
 
             for chunk in stream:
+                print(chunk, end="", flush=True)
                 yield chunk   # 🔥 streaming output
 
         except Exception as e:
@@ -160,4 +161,32 @@ def revised_policy():
         generate(),
         mimetype="text/plain",
         direct_passthrough=True   # ⚡ helps streaming
+    )
+
+@analyze_bp.route("/implementation-roadmap", methods=["POST"])
+def implementation_roadmap():
+    data = request.get_json()
+
+    text = data.get("text")
+    revised_policy = data.get("revised_policy")
+
+    # ✅ Validation
+    if not text or not revised_policy:
+        return Response("Missing 'text' or 'revised_policy'", status=400)
+
+    def generate():
+        try:
+            stream = generate_roadmap_stream(text, revised_policy)
+
+            for chunk in stream:
+                print(chunk, end="", flush=True)   # 👈 debug
+                yield chunk.encode("utf-8")        # 👈 streaming fix
+
+        except Exception as e:
+            yield f"\nERROR: {str(e)}".encode("utf-8")
+
+    return Response(
+        generate(),
+        mimetype="text/plain",
+        direct_passthrough=True
     )

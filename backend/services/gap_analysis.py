@@ -8,7 +8,7 @@ from backend.services.nist_retrieval import (
      hybrid_fetch_nist_records,
     extract_relevant_text
 )
-from backend.config.prompts import GAP_ONLY_PROMPT, REVISED_POLICY_PROMPT 
+from backend.config.prompts import GAP_ONLY_PROMPT, REVISED_POLICY_PROMPT , ROADMAP_PROMPT
 
 def extract_json(text: str):
     """Safely extract JSON from LLM output."""
@@ -269,3 +269,12 @@ def generate_revised_policy_stream(text: str, gap_analysis: str):
     )
 
     return stream_llm(prompt)  # ← important change    
+
+def generate_roadmap_stream(text: str, revised_policy: str):
+
+    prompt = ROADMAP_PROMPT.format(
+        organization_policy=text,
+        revised_policy=revised_policy
+    )
+
+    return stream_llm(prompt)   # 👈 reuse your streaming LLM

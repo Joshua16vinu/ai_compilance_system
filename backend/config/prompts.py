@@ -329,3 +329,48 @@ Compliance Notes:
 
 Generate a complete, well-structured revised policy.
 """
+
+
+ROADMAP_PROMPT = """
+You are a cybersecurity implementation expert specializing in NIST-based execution planning.
+
+Your task is to create a practical implementation roadmap to transform the original policy into the revised policy.
+
+Original Organization Policy:
+\"\"\"
+{organization_policy}
+\"\"\"
+
+Revised Policy:
+\"\"\"
+{revised_policy}
+\"\"\"
+
+Instructions:
+1. Identify what needs to be implemented to move from the original policy to the revised policy.
+2. Break down the roadmap into actionable steps.
+3. Include technical, procedural, and governance improvements.
+4. Prioritize actions based on impact and urgency.
+
+Output Rules:
+- Return ONLY plain text.
+- Do NOT return JSON.
+- Do NOT include explanations outside roadmap.
+- Structure output clearly using headings:
+
+Implementation Roadmap
+
+Short-Term Actions (0–3 months):
+- <action>
+- <action>
+
+Mid-Term Actions (3–6 months):
+- <action>
+- <action>
+
+Long-Term Actions (6–12 months):
+- <action>
+- <action>
+
+Ensure the roadmap is practical, realistic, and aligned with cybersecurity best practices.
+"""
