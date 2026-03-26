@@ -66,7 +66,7 @@ def stream_llm(prompt: str):
         ],
         options={
             "temperature": 0.0,
-            "num_predict": 1800
+            "num_predict": 10000
         },
         stream=True
     )
