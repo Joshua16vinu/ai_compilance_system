@@ -203,18 +203,18 @@ def hybrid_fetch_nist_records(policy_text: str, domain: str = None):
             "metadata": meta,
             "score": similarity
         }
-    print(f"\n📌 Semantic Results Count: {len(semantic_results['ids'][0])}")
+    #print(f"\n📌 Semantic Results Count: {len(semantic_results['ids'][0])}")
     # 🔹 Keyword (top 5)
     keyword_results = keyword_search(policy_text, top_k=5)
-    print(f"\n📌 Keyword Results Count: {len(keyword_results)}")
+    #print(f"\n📌 Keyword Results Count: {len(keyword_results)}")
     for r in keyword_results:
         if r["id"] in combined:
             combined[r["id"]]["score"] += r["score"]
         else:
             combined[r["id"]] = r
     
-    print("\n🔗 Merging Semantic + Keyword Results (UNION)")
-    print(f"\n📊 Total Combined Chunks: {len(combined)}")
+    #print("\n🔗 Merging Semantic + Keyword Results (UNION)")
+    #print(f"\n📊 Total Combined Chunks: {len(combined)}")
     # 🔹 Sort final
     final_results = sorted(combined.values(), key=lambda x: x["score"], reverse=True)
     
@@ -222,7 +222,7 @@ def hybrid_fetch_nist_records(policy_text: str, domain: str = None):
 
 
 def extract_relevant_text(records, query):
-    print("\n✂️ [STEP 2] Sentence Extraction Started")
+    #print("\n✂️ [STEP 2] Sentence Extraction Started")
     embedder = load_embedding_model()
     query_embedding = embedder.encode(query)
 
@@ -247,10 +247,10 @@ def extract_relevant_text(records, query):
 
         if keyword_match or similarity > 0.5:
             matched_sentences += 1
-            print(f"✅ Matched: {s_clean[:80]}... | Score: {similarity:.4f}")
+            #print(f"✅ Matched: {s_clean[:80]}... | Score: {similarity:.4f}")
             extracted.append((s_clean, similarity))
 
     extracted = sorted(extracted, key=lambda x: x[1], reverse=True)
-    print(f"\n📊 Total Sentences Scanned: {total_sentences}")
-    print(f"📊 Matched Sentences: {matched_sentences}")
+    #print(f"\n📊 Total Sentences Scanned: {total_sentences}")
+    #print(f"📊 Matched Sentences: {matched_sentences}")
     return [s for s, _ in extracted[:20]]

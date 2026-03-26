@@ -1,5 +1,6 @@
 import json
 import re
+import threading
 from backend.config.prompts import GAP_ANALYSIS_PROMPT
 from backend.llm.mistral_client import call_llm , stream_llm
 from backend.services.nist_retrieval import (
@@ -9,6 +10,7 @@ from backend.services.nist_retrieval import (
     extract_relevant_text
 )
 from backend.config.prompts import GAP_ONLY_PROMPT, REVISED_POLICY_PROMPT , ROADMAP_PROMPT
+import time
 
 def extract_json(text: str):
     """Safely extract JSON from LLM output."""
@@ -137,6 +139,11 @@ def analyze_gap_for_domain(domain: str, text: str, use_semantic_search=True):
  # add these imports
 def analyze_gap_only(domain: str, text: str):
     try:
+        start_time = time.time()
+        start_str = time.strftime("%H:%M:%S")
+
+        # 🔥 Print START
+        print(f"🚀 START: {domain} | Time: {start_str} | Thread: {threading.get_ident()}", flush=True)
         nist_records = hybrid_fetch_nist_records(
             policy_text=text,
             domain=domain
@@ -153,6 +160,8 @@ def analyze_gap_only(domain: str, text: str):
         )
 
         response = call_llm(prompt)
+        end_time = time.time()
+        print(f"✅ END: {domain} at {time.strftime('%X')} | Time: {end_time - start_time:.2f}s")
         result = extract_json(response)
 
         if not result:
@@ -172,67 +181,67 @@ def analyze_gap_only(domain: str, text: str):
             "gap_analysis": [],
             "error": str(e)
         }
-# def generate_revised_policy(domain: str, text: str, gap_analysis: list):
-#     """
-#     STEP 2 — Revised policy generation using gap analysis output + original policy.
-#     """
-#     try:
-#         gap_analysis_str = json.dumps(gap_analysis, indent=2)
+def generate_revised_policy(domain: str, text: str, gap_analysis: list):
+    """
+    STEP 2 — Revised policy generation using gap analysis output + original policy.
+    """
+    try:
+        gap_analysis_str = json.dumps(gap_analysis, indent=2)
 
-#         prompt = REVISED_POLICY_PROMPT.format(
-#             domain=domain,
-#             subdomain=domain,
-#             organization_policy=text,
-#             gap_analysis=gap_analysis_str
-#         )
+        prompt = REVISED_POLICY_PROMPT.format(
+            domain=domain,
+            subdomain=domain,
+            organization_policy=text,
+            gap_analysis=gap_analysis_str
+        )
 
-#         response = call_llm(prompt)
-#         print(f"\n===== REVISED POLICY LLM OUTPUT =====\n{response}\n=====================================")
+        response = call_llm(prompt)
+        print(f"\n===== REVISED POLICY LLM OUTPUT =====\n{response}\n=====================================")
 
-#         result = extract_json(response)
+        result = extract_json(response)
 
-#         if not result:
-#             print("⚠️ Failed to parse JSON from revised policy LLM response")
-#             return {
-#                 "domain": domain,
-#                 "subdomain": domain,
-#                 "revised_policy": {
-#                     "introduction": "",
-#                     "statements": [],
-#                     "compliance_notes": ""
-#                 },
-#                 "implementation_roadmap": {
-#                     "short_term": [],
-#                     "mid_term": [],
-#                     "long_term": []
-#                 }
-#             }
+        if not result:
+            print("⚠️ Failed to parse JSON from revised policy LLM response")
+            return {
+                "domain": domain,
+                "subdomain": domain,
+                "revised_policy": {
+                    "introduction": "",
+                    "statements": [],
+                    "compliance_notes": ""
+                },
+                "implementation_roadmap": {
+                    "short_term": [],
+                    "mid_term": [],
+                    "long_term": []
+                }
+            }
 
-#         result.setdefault("domain", domain)
-#         result.setdefault("subdomain", domain)
-#         result.setdefault("revised_policy", {})
-#         result.setdefault("implementation_roadmap", {})
+        result.setdefault("domain", domain)
+        result.setdefault("subdomain", domain)
+        result.setdefault("revised_policy", {})
+        result.setdefault("implementation_roadmap", {})
 
-#         print(f"✅ Revised policy generated for domain: {domain}")
-#         return result
+        print(f"✅ Revised policy generated for domain: {domain}")
+        return result
 
-#     except Exception as e:
-#         print("❌ Revised policy generation error:", str(e))
-#         return {
-#             "domain": domain,
-#             "subdomain": domain,
-#             "revised_policy": {
-#                 "introduction": "",
-#                 "statements": [],
-#                 "compliance_notes": ""
-#             },
-#             "implementation_roadmap": {
-#                 "short_term": [],
-#                 "mid_term": [],
-#                 "long_term": []
-#             },
-#             "error": str(e)
-#         }
+    except Exception as e:
+        print("❌ Revised policy generation error:", str(e))
+        return {
+            "domain": domain,
+            "subdomain": domain,
+            "revised_policy": {
+                "introduction": "",
+                "statements": [],
+                "compliance_notes": ""
+            },
+            "implementation_roadmap": {
+                "short_term": [],
+                "mid_term": [],
+                "long_term": []
+            },
+            "error": str(e)
+        }
     
 def generate_revised_policy_stream(text: str, gap_analysis: str):
 

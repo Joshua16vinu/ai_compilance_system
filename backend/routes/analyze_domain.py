@@ -207,7 +207,7 @@ def analyze_gap_batch():
 
     def generate():
         try:
-            with ThreadPoolExecutor(max_workers=4) as executor:
+            with ThreadPoolExecutor(max_workers=2) as executor:
                 futures = {
                     executor.submit(analyze_gap_only, domain, domain_text): domain
                     for domain, domain_text in categorized.items()
