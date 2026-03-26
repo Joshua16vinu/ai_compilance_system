@@ -2,6 +2,7 @@ import json
 from flask import Blueprint, request, Response
 from backend.services.gap_analysis import analyze_gap_for_domain, generate_revised_policy, analyze_gap_only
 from backend.services.gap_analysis import generate_roadmap_stream , generate_revised_policy_stream
+from concurrent.futures import ThreadPoolExecutor, as_completed
 analyze_bp = Blueprint("analyze", __name__)
 
 @analyze_bp.route("/analyze-domain", methods=["POST"])
@@ -186,6 +187,40 @@ def implementation_roadmap():
             for chunk in stream:
                 print(chunk, end="", flush=True)   # 👈 debug
                 yield chunk.encode("utf-8")        # 👈 streaming fix
+
+        except Exception as e:
+            yield f"\nERROR: {str(e)}".encode("utf-8")
+
+    return Response(
+        generate(),
+        mimetype="text/plain",
+        direct_passthrough=True
+    )
+@analyze_bp.route("/analyze-gap-batch", methods=["POST"])
+def analyze_gap_batch():
+    data = request.get_json()
+
+    categorized = data.get("categorized_policy")
+
+    if not categorized or not isinstance(categorized, dict):
+        return Response("Missing or invalid 'categorized_policy'", status=400)
+
+    def generate():
+        try:
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                futures = {
+                    executor.submit(analyze_gap_only, domain, domain_text): domain
+                    for domain, domain_text in categorized.items()
+                    if domain_text.strip()
+                }
+
+                for future in as_completed(futures):
+                    result = future.result()
+
+                    chunk = json.dumps(result) + "\n"
+
+                    print(f"\n✅ GAP DONE: {result['domain']}")
+                    yield chunk.encode("utf-8")
 
         except Exception as e:
             yield f"\nERROR: {str(e)}".encode("utf-8")
