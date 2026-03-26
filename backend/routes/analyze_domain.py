@@ -1,6 +1,6 @@
 import json
 from flask import Blueprint, request, Response
-from backend.services.gap_analysis import analyze_gap_for_domain, generate_revised_policy, analyze_gap_only
+from backend.services.gap_analysis import analyze_gap_for_domain, generate_revised_policy, analyze_gap_only, generate_revised_policy_stream
 
 analyze_bp = Blueprint("analyze", __name__)
 
@@ -86,48 +86,78 @@ def analyze_gap():
     )
 
 
+# @analyze_bp.route("/revised-policy", methods=["POST"])
+# def revised_policy():
+#     """
+#     STEP 2 — Revised Policy generation.
+
+#     Expected JSON:
+#     {
+#       "domain": "ISMS",
+#       "text": "original organization policy text...",
+#       "gap_analysis": [ ...gap objects from /analyze-gap response... ]
+#     }
+
+#     Returns revised_policy + implementation_roadmap.
+#     """
+#     data = request.get_json()
+#     print("Incoming payload:", data)
+
+#     domain = data.get("domain")
+#     text = data.get("text")
+#     gap_analysis = data.get("gap_analysis", [])
+
+#     if not domain or not text:
+#         return Response("Invalid request payload", status=400)
+
+#     if not isinstance(gap_analysis, list):
+#         return Response("'gap_analysis' must be a list", status=400)
+
+#     try:
+#         result = generate_revised_policy(
+#             domain=domain,
+#             text=text,
+#             gap_analysis=gap_analysis
+#         )
+#     except Exception as e:
+#         return Response(
+#             f"ERROR: Revised policy generation failed\n{str(e)}",
+#             mimetype="text/plain",
+#             status=500
+#         )
+
+#     return Response(
+#         json.dumps(result, indent=2),
+#         mimetype="application/json",
+#         status=200
+#     )
+
 @analyze_bp.route("/revised-policy", methods=["POST"])
 def revised_policy():
-    """
-    STEP 2 — Revised Policy generation.
-
-    Expected JSON:
-    {
-      "domain": "ISMS",
-      "text": "original organization policy text...",
-      "gap_analysis": [ ...gap objects from /analyze-gap response... ]
-    }
-
-    Returns revised_policy + implementation_roadmap.
-    """
     data = request.get_json()
-    print("Incoming payload:", data)
 
-    domain = data.get("domain")
     text = data.get("text")
-    gap_analysis = data.get("gap_analysis", [])
+    gap_analysis = data.get("gap_analysis")
 
-    if not domain or not text:
-        return Response("Invalid request payload", status=400)
+    # ✅ Validate input
+    if not text or not gap_analysis:
+        return Response("Missing 'text' or 'gap_analysis'", status=400)
 
-    if not isinstance(gap_analysis, list):
-        return Response("'gap_analysis' must be a list", status=400)
+    if not isinstance(gap_analysis, str):
+        return Response("'gap_analysis' must be a string", status=400)
 
-    try:
-        result = generate_revised_policy(
-            domain=domain,
-            text=text,
-            gap_analysis=gap_analysis
-        )
-    except Exception as e:
-        return Response(
-            f"ERROR: Revised policy generation failed\n{str(e)}",
-            mimetype="text/plain",
-            status=500
-        )
+    def generate():
+        try:
+            stream = generate_revised_policy_stream(text, gap_analysis)
+
+            for chunk in stream:
+                yield chunk   # 🔥 streaming output
+
+        except Exception as e:
+            yield f"\nERROR: {str(e)}"
 
     return Response(
-        json.dumps(result, indent=2),
-        mimetype="application/json",
-        status=200
+        generate(),
+        mimetype="text/plain",
+        direct_passthrough=True   # ⚡ helps streaming
     )

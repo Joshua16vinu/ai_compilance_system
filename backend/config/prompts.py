@@ -217,13 +217,78 @@ Output format:
 }}
 """
 
+# REVISED_POLICY_PROMPT = """
+# You are a cybersecurity policy writer specializing in NIST framework alignment.
+
+# Your task is to generate a revised policy and implementation roadmap based on the identified gaps and the original organization policy.
+
+# Domain: {domain}
+# Subdomain: {subdomain}
+
+# Original Organization Policy:
+# \"\"\"
+# {organization_policy}
+# \"\"\"
+
+# Identified Gaps:
+# \"\"\"
+# {gap_analysis}
+# \"\"\"
+
+# Tasks:
+# 1. Write improved policy statements that directly close each identified gap.
+# 2. Provide a practical remediation roadmap with short, mid, and long-term actions.
+
+# Output Rules:
+# - Return ONLY valid JSON.
+# - Do NOT include explanations outside JSON.
+# - If gap_analysis is empty, return empty statements and roadmap lists.
+
+# Output format:
+# {{
+#   "domain": "{domain}",
+#   "subdomain": "{subdomain}",
+#   "revised_policy": {{
+#     "introduction": "Improved policy introduction aligned with NIST standards",
+#     "statements": [
+#       "Improved policy statement addressing each gap"
+#     ],
+#     "compliance_notes": "Explanation of how improvements align with NIST"
+#   }},
+#   "implementation_roadmap": {{
+#     "short_term": [
+#       {{
+#         "action": "Immediate remediation action",
+#         "timeline": "0-3 months",
+#         "priority": "Critical | High | Medium | Low",
+#         "resources": "Required resources"
+#       }}
+#     ],
+#     "mid_term": [
+#       {{
+#         "action": "Medium-term improvement",
+#         "timeline": "3-6 months",
+#         "priority": "High | Medium",
+#         "resources": "Required resources"
+#       }}
+#     ],
+#     "long_term": [
+#       {{
+#         "action": "Long-term improvement",
+#         "timeline": "6-12 months",
+#         "priority": "Medium | Low",
+#         "resources": "Required resources"
+#       }}
+#     ]
+#   }}
+# }}
+# """
+
+
 REVISED_POLICY_PROMPT = """
-You are a cybersecurity policy writer specializing in NIST framework alignment.
+You are a cybersecurity policy expert specializing in NIST framework alignment.
 
-Your task is to generate a revised policy and implementation roadmap based on the identified gaps and the original organization policy.
-
-Domain: {domain}
-Subdomain: {subdomain}
+Your task is to revise and improve the given organization policy by addressing the identified gaps.
 
 Original Organization Policy:
 \"\"\"
@@ -235,51 +300,32 @@ Identified Gaps:
 {gap_analysis}
 \"\"\"
 
-Tasks:
-1. Write improved policy statements that directly close each identified gap.
-2. Provide a practical remediation roadmap with short, mid, and long-term actions.
+Instructions:
+1. Rewrite and enhance the policy to address all identified gaps.
+2. Ensure the policy aligns with NIST standards.
+3. Improve clarity, structure, and completeness.
+4. Do NOT mention gaps explicitly — integrate improvements naturally.
+5. Maintain a formal and professional policy tone.
 
 Output Rules:
-- Return ONLY valid JSON.
-- Do NOT include explanations outside JSON.
-- If gap_analysis is empty, return empty statements and roadmap lists.
+- Return ONLY plain text.
+- Do NOT return JSON.
+- Do NOT include roadmap or implementation steps.
+- Do NOT include explanations or meta-comments.
+- Structure the output using clear headings exactly like below:
 
-Output format:
-{{
-  "domain": "{domain}",
-  "subdomain": "{subdomain}",
-  "revised_policy": {{
-    "introduction": "Improved policy introduction aligned with NIST standards",
-    "statements": [
-      "Improved policy statement addressing each gap"
-    ],
-    "compliance_notes": "Explanation of how improvements align with NIST"
-  }},
-  "implementation_roadmap": {{
-    "short_term": [
-      {{
-        "action": "Immediate remediation action",
-        "timeline": "0-3 months",
-        "priority": "Critical | High | Medium | Low",
-        "resources": "Required resources"
-      }}
-    ],
-    "mid_term": [
-      {{
-        "action": "Medium-term improvement",
-        "timeline": "3-6 months",
-        "priority": "High | Medium",
-        "resources": "Required resources"
-      }}
-    ],
-    "long_term": [
-      {{
-        "action": "Long-term improvement",
-        "timeline": "6-12 months",
-        "priority": "Medium | Low",
-        "resources": "Required resources"
-      }}
-    ]
-  }}
-}}
+Revised Policy
+
+Introduction:
+<Improved introduction aligned with NIST>
+
+Policy Statements:
+1. <Improved statement>
+2. <Improved statement>
+...
+
+Compliance Notes:
+<How the policy aligns with NIST and improves security posture>
+
+Generate a complete, well-structured revised policy.
 """

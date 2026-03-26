@@ -48,3 +48,30 @@ def call_llm(prompt: str) -> str:
     print("======================\n")
 
     return result.strip()
+
+def stream_llm(prompt: str):
+    ensure_ollama_running()
+
+    response = ollama.chat(
+        model="mistral",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a cybersecurity policy analysis assistant."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        options={
+            "temperature": 0.0,
+            "num_predict": 1800
+        },
+        stream=True
+    )
+
+    for part in response:
+        chunk = part.get("message", {}).get("content", "")
+        if chunk:
+            yield chunk

@@ -1,7 +1,7 @@
 import json
 import re
 from backend.config.prompts import GAP_ANALYSIS_PROMPT
-from backend.llm.mistral_client import call_llm
+from backend.llm.mistral_client import call_llm , stream_llm
 from backend.services.nist_retrieval import (
     fetch_similar_nist_records,
     format_nist_chunks_for_prompt,
@@ -260,3 +260,12 @@ def generate_revised_policy(domain: str, text: str, gap_analysis: list):
             },
             "error": str(e)
         }
+    
+def generate_revised_policy_stream(text: str, gap_analysis: str):
+
+    prompt = REVISED_POLICY_PROMPT.format(
+        organization_policy=text,
+        gap_analysis=gap_analysis
+    )
+
+    return stream_llm(prompt)  # ← important change    
