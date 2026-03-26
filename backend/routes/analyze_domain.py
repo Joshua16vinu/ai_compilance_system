@@ -137,7 +137,10 @@ def revised_policy():
     data = request.get_json()
 
     text = data.get("text")
+    print("Original policy text:", text)
     gap_analysis = data.get("gap_analysis")
+    print("Gap analysis input:", gap_analysis)
+
 
     # ✅ Validate input
     if not text or not gap_analysis:
@@ -152,10 +155,12 @@ def revised_policy():
 
             for chunk in stream:
                 print(chunk, end="", flush=True)
-                yield chunk   # 🔥 streaming output
+                yield chunk.encode("utf-8")   # ✅ FIX
+
+            
 
         except Exception as e:
-            yield f"\nERROR: {str(e)}"
+            yield f"\nERROR: {str(e)}".encode("utf-8")   # ✅ FIX
 
     return Response(
         generate(),
