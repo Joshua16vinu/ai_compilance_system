@@ -11,3 +11,4 @@ def load_embedding_model():
         _embedder = SentenceTransformer(str(MODEL_PATH))
 
     return _embedder
+

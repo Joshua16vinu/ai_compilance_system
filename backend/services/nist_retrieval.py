@@ -221,6 +221,59 @@ def hybrid_fetch_nist_records(policy_text: str, domain: str = None):
     return final_results[:10]
 
 
+
+def hybrid_fetch_nist_records_version2(policy_text: str, domain: str = None,top_k: int = 5):
+    embedder = load_embedding_model()
+
+    # 🔹 Semantic (top 10)
+    query_embedding = embedder.encode(policy_text).tolist()
+
+    query_params = {
+        "query_embeddings": [query_embedding],
+        "n_results": top_k,
+        "include": ["documents", "metadatas", "distances"]
+    }
+
+    if domain:
+        query_params["where"] = {"domain": domain}
+
+    semantic_results = _collection.query(**query_params)
+
+    combined = {}
+
+    # Add semantic
+    for doc_id, doc, meta, dist in zip(
+        semantic_results["ids"][0],
+        semantic_results["documents"][0],
+        semantic_results["metadatas"][0],
+        semantic_results["distances"][0]
+    ):
+        similarity = 1 - dist
+
+        combined[doc_id] = {
+            "id": doc_id,
+            "text": doc,
+            "metadata": meta,
+            "score": similarity
+        }
+    #print(f"\n📌 Semantic Results Count: {len(semantic_results['ids'][0])}")
+    # 🔹 Keyword (top 5)
+    keyword_results = keyword_search(policy_text, top_k=5)
+    #print(f"\n📌 Keyword Results Count: {len(keyword_results)}")
+    for r in keyword_results:
+        if r["id"] in combined:
+            combined[r["id"]]["score"] += r["score"]
+        else:
+            combined[r["id"]] = r
+    
+    #print("\n🔗 Merging Semantic + Keyword Results (UNION)")
+    #print(f"\n📊 Total Combined Chunks: {len(combined)}")
+    # 🔹 Sort final
+    final_results = sorted(combined.values(), key=lambda x: x["score"], reverse=True)
+    
+    return final_results[:top_k]
+
+
 def extract_relevant_text(records, query):
     #print("\n✂️ [STEP 2] Sentence Extraction Started")
     embedder = load_embedding_model()
@@ -254,3 +307,30 @@ def extract_relevant_text(records, query):
     #print(f"\n📊 Total Sentences Scanned: {total_sentences}")
     #print(f"📊 Matched Sentences: {matched_sentences}")
     return [s for s, _ in extracted[:20]]
+
+
+
+
+def retrieve_nist_for_chunks(chunks, top_k=5):
+    """
+    Retrieve NIST chunks for each input chunk
+    """
+
+    all_results = []
+
+    for chunk in chunks:
+        results = hybrid_fetch_nist_records_version2(
+            policy_text=chunk,
+            top_k=top_k
+        )
+        all_results.extend(results)
+
+    # Deduplicate
+    unique = {r["id"]: r for r in all_results}
+
+    # Global ranking
+    ranked = sorted(unique.values(), key=lambda x: x["score"], reverse=True)
+    print(f"\n📌 Total NIST Records Retrieved (Pre-Dedup): {len(all_results)}"  )
+    print(f"\n📌 Total NIST Records Retrieved (Post-Dedup): {len(ranked)}"  )
+
+    return ranked
