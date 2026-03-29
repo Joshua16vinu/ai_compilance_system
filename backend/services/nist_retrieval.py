@@ -222,10 +222,61 @@ def hybrid_fetch_nist_records(policy_text: str, domain: str = None):
 
 
 
-def hybrid_fetch_nist_records_version2(policy_text: str, domain: str = None,top_k: int = 5):
+# def hybrid_fetch_nist_records_version2(policy_text: str, domain: str = None,top_k: int = 5):
+#     embedder = load_embedding_model()
+
+#     # 🔹 Semantic (top 10)
+#     query_embedding = embedder.encode(policy_text).tolist()
+
+#     query_params = {
+#         "query_embeddings": [query_embedding],
+#         "n_results": top_k,
+#         "include": ["documents", "metadatas", "distances"]
+#     }
+
+#     if domain:
+#         query_params["where"] = {"domain": domain}
+
+#     semantic_results = _collection.query(**query_params)
+
+#     combined = {}
+
+#     # Add semantic
+#     for doc_id, doc, meta, dist in zip(
+#         semantic_results["ids"][0],
+#         semantic_results["documents"][0],
+#         semantic_results["metadatas"][0],
+#         semantic_results["distances"][0]
+#     ):
+#         similarity = 1 - dist
+
+#         combined[doc_id] = {
+#             "id": doc_id,
+#             "text": doc,
+#             "metadata": meta,
+#             "score": similarity
+#         }
+#     #print(f"\n📌 Semantic Results Count: {len(semantic_results['ids'][0])}")
+#     # 🔹 Keyword (top 5)
+#     keyword_results = keyword_search(policy_text, top_k=5)
+#     #print(f"\n📌 Keyword Results Count: {len(keyword_results)}")
+#     for r in keyword_results:
+#         if r["id"] in combined:
+#             combined[r["id"]]["score"] += r["score"]
+#         else:
+#             combined[r["id"]] = r
+    
+#     #print("\n🔗 Merging Semantic + Keyword Results (UNION)")
+#     #print(f"\n📊 Total Combined Chunks: {len(combined)}")
+#     # 🔹 Sort final
+#     final_results = sorted(combined.values(), key=lambda x: x["score"], reverse=True)
+    
+#     return final_results[:top_k]
+
+
+def hybrid_fetch_nist_records_version2(policy_text, domain=None, top_k=5):
     embedder = load_embedding_model()
 
-    # 🔹 Semantic (top 10)
     query_embedding = embedder.encode(policy_text).tolist()
 
     query_params = {
@@ -241,7 +292,7 @@ def hybrid_fetch_nist_records_version2(policy_text: str, domain: str = None,top_
 
     combined = {}
 
-    # Add semantic
+    # Semantic
     for doc_id, doc, meta, dist in zip(
         semantic_results["ids"][0],
         semantic_results["documents"][0],
@@ -256,23 +307,19 @@ def hybrid_fetch_nist_records_version2(policy_text: str, domain: str = None,top_
             "metadata": meta,
             "score": similarity
         }
-    #print(f"\n📌 Semantic Results Count: {len(semantic_results['ids'][0])}")
-    # 🔹 Keyword (top 5)
+
+    # Keyword
     keyword_results = keyword_search(policy_text, top_k=5)
-    #print(f"\n📌 Keyword Results Count: {len(keyword_results)}")
+
     for r in keyword_results:
         if r["id"] in combined:
             combined[r["id"]]["score"] += r["score"]
         else:
             combined[r["id"]] = r
-    
-    #print("\n🔗 Merging Semantic + Keyword Results (UNION)")
-    #print(f"\n📊 Total Combined Chunks: {len(combined)}")
-    # 🔹 Sort final
-    final_results = sorted(combined.values(), key=lambda x: x["score"], reverse=True)
-    
-    return final_results[:top_k]
 
+    final_results = sorted(combined.values(), key=lambda x: x["score"], reverse=True)
+
+    return final_results[:top_k]
 
 def extract_relevant_text(records, query):
     #print("\n✂️ [STEP 2] Sentence Extraction Started")
@@ -334,3 +381,45 @@ def retrieve_nist_for_chunks(chunks, top_k=5):
     print(f"\n📌 Total NIST Records Retrieved (Post-Dedup): {len(ranked)}"  )
 
     return ranked
+
+def select_top_dynamic(ranked, min_score=-5.0, max_k=3, score_gap=1.5):
+
+    if not ranked:
+        return []
+
+    selected = [ranked[0]]
+
+    for i in range(1, len(ranked)):
+        current = ranked[i]
+        prev = ranked[i - 1]
+
+        # gap check
+        if prev["rerank_score"] - current["rerank_score"] > score_gap:
+            break
+
+        # relaxed threshold
+        if current["rerank_score"] < min_score:
+            continue   # 🔥 skip instead of break
+
+        selected.append(current)
+
+        if len(selected) >= max_k:
+            break
+
+    return selected
+
+def retrieve_nist_for_chunk_domains(chunk, domains, top_k=5):
+    all_results = []
+
+    for domain in domains:
+        results = hybrid_fetch_nist_records_version2(
+            policy_text=chunk,
+            domain=domain,
+            top_k=top_k
+        )
+        all_results.extend(results)
+
+    # Deduplicate
+    unique = {r["id"]: r for r in all_results}
+
+    return list(unique.values())
