@@ -382,7 +382,7 @@ def retrieve_nist_for_chunks(chunks, top_k=5):
 
     return ranked
 
-def select_top_dynamic(ranked, min_score=-5.0, max_k=3, score_gap=1.5):
+def select_top_dynamic(ranked, min_score=-5.0, max_k=3, score_gap=3.0):
 
     if not ranked:
         return []
@@ -394,8 +394,8 @@ def select_top_dynamic(ranked, min_score=-5.0, max_k=3, score_gap=1.5):
         prev = ranked[i - 1]
 
         # gap check
-        if prev["rerank_score"] - current["rerank_score"] > score_gap:
-            break
+        # if prev["rerank_score"] - current["rerank_score"] > score_gap:
+        #     break
 
         # relaxed threshold
         if current["rerank_score"] < min_score:
@@ -408,7 +408,7 @@ def select_top_dynamic(ranked, min_score=-5.0, max_k=3, score_gap=1.5):
 
     return selected
 
-def retrieve_nist_for_chunk_domains(chunk, domains, top_k=5):
+def retrieve_nist_for_chunk_domains(chunk, domains, top_k=15):
     all_results = []
 
     for domain in domains:

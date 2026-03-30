@@ -8,6 +8,7 @@ from backend.domain.domain_classification import classify_chunk_domains
 from backend.services.nist_retrieval import retrieve_nist_for_chunk_domains
 from backend.reranker_model.reranker_loader import load_reranker
 from backend.services.nist_retrieval import select_top_dynamic
+from collections import defaultdict
 def process_pdf(pdf_path: str):
     """
     Complete PDF → OCR → Clean → Domain Chunk pipeline
@@ -83,6 +84,42 @@ def rerank_results(chunk, candidates):
 
     return ranked   # ✅ no slicing
 
+
+def make_unique_and_distribute(final_output, max_per_chunk=5):
+
+    for domain, items in final_output.items():
+
+        if not items:
+            continue
+
+        # 🔹 Step 1: Collect ALL NIST (no duplicates)
+        unique_nist = {}
+
+        for item in items:
+            for n in item["nist_chunks"]:
+                unique_nist[n["id"]] = n   # overwrite → keeps unique only
+
+        # 🔹 Step 2: Reset chunks
+        for item in items:
+            item["nist_chunks"] = []
+
+        all_nist = list(unique_nist.values())
+
+        # 🔹 Step 3: Distribute (round-robin)
+        i = 0
+        for n in all_nist:
+            idx = i % len(items)
+
+            if len(items[idx]["nist_chunks"]) < max_per_chunk:
+                items[idx]["nist_chunks"].append(n)
+
+            i += 1
+
+
+# ============================================================
+# 🔹 MAIN PIPELINE
+# ============================================================
+
 def process_pdf_v2(pdf_path: str):
 
     embedder = load_embedding_model()
@@ -95,7 +132,7 @@ def process_pdf_v2(pdf_path: str):
     cleaned_text = clean_text(raw_text)
 
     chunks = sentence_token_chunking(cleaned_text)
-
+    print(f"✅ Total chunks created: {len(chunks)}")
     final_output = {
         "ISMS": [],
         "Risk Management": [],
@@ -105,79 +142,54 @@ def process_pdf_v2(pdf_path: str):
 
     for chunk in chunks:
 
-        # 🔹 1. Domain classification
-        domain_info = classify_chunk_domains(chunk, embedder)
-        domains = domain_info["domains"]
+    # 🔹 1. Domain classification
+     domain_info = classify_chunk_domains(chunk, embedder)
+     domains = domain_info["domains"]
 
-        # 🔹 2. Retrieve NIST (domain filtered)
-        candidates = retrieve_nist_for_chunk_domains(chunk, domains, top_k=5)
+     print("Domains:", domains)
 
-        # 🔹 3. Rerank
-        ranked = rerank_results(chunk, candidates)
+    # 🔹 2. Process EACH domain separately
+     for d in domains:
 
-        # 🔹 4. Dynamic selection
-        top_nist = select_top_dynamic(ranked)
+        # ✅ Retrieve per domain
+        candidates = retrieve_nist_for_chunk_domains(
+             chunk,
+              domains=[d],
+              top_k=15
+)
 
-        # 🔹 5. Assign to EACH domain
-        for d in domains:
+        print(len(candidates), "candidates for domain", d)
 
-            entry = {
-                "input": chunk,
-                "domain_scores": domain_info["scores"],
-                "nist_chunks": []
-            }
+        # 🔹 3. Select top 5
+        top_nist = candidates[:5]
 
-            for n in top_nist:
+        entry = {
+            "input": chunk,
+            "domain_scores": domain_info["scores"],
+            "nist_chunks": []
+        }
 
-                # ✅ relaxed domain match
-                if n["metadata"].get("domain") in domains:
+        # 🔹 4. Assign (NO NEED to filter now)
+        for n in top_nist:
+            entry["nist_chunks"].append({
+                "id": n["id"],
+                "text": n["text"],
+                "score": n["score"],
+            })
 
-                    entry["nist_chunks"].append({
-                        "id": n["id"],
-                        "text": n["text"],
-                        "score": n["score"],
-                        "rerank_score": n.get("rerank_score", 0)
-                    })
-
-            final_output[d].append(entry)
-
-    # ============================================================
-    # 🔥 FINAL: MAKE NIST UNIQUE PER DOMAIN
-    # ============================================================
-
-    for domain, items in final_output.items():
-
-        unique_map = {}
-
-        # collect best version
-        for item in items:
-            for n in item["nist_chunks"]:
-
-                if n["id"] not in unique_map:
-                    unique_map[n["id"]] = n
-                else:
-                    if n["rerank_score"] > unique_map[n["id"]]["rerank_score"]:
-                        unique_map[n["id"]] = n
-
-        used_ids = set()
-
-        # redistribute (unique per domain)
-        for item in items:
-            new_nist = []
-
-            for n in item["nist_chunks"]:
-                if n["id"] not in used_ids:
-                    new_nist.append(unique_map[n["id"]])
-                    used_ids.add(n["id"])
-
-            item["nist_chunks"] = new_nist
+        final_output[d].append(entry)
 
     # ============================================================
-    # 🔹 METRICS (DEBUG)
+    # 🔥 APPLY UNIQUE + BALANCED DISTRIBUTION
+    # ============================================================
+
+    make_unique_and_distribute(final_output)
+
+    # ============================================================
+    # 🔹 METRICS
     # ============================================================
 
     for domain, items in final_output.items():
-
         total_input = len(items)
         total_nist = sum(len(i["nist_chunks"]) for i in items)
 
