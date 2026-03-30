@@ -83,7 +83,36 @@ def rerank_results(chunk, candidates):
     ranked = sorted(candidates, key=lambda x: x["rerank_score"], reverse=True)
 
     return ranked   # ✅ no slicing
+def format_final_output(final_output):
+    formatted = []
 
+    for domain, items in final_output.items():
+
+        domain_entry = {
+            "domain": domain,
+            "text": [],
+            "related_nist_chunks": []
+        }
+
+        seen_nist_ids = set()
+
+        for item in items:
+            # 🔹 Collect input chunks
+            domain_entry["text"].append(item["input"])
+
+            # 🔹 Collect UNIQUE NIST chunks
+            for n in item["nist_chunks"]:
+                if n["id"] not in seen_nist_ids:
+                    domain_entry["related_nist_chunks"].append({
+                        "id": n["id"],
+                        "text": n["text"],
+                        "score": n["score"]
+                    })
+                    seen_nist_ids.add(n["id"])
+
+        formatted.append(domain_entry)
+
+    return formatted
 
 def make_unique_and_distribute(final_output, max_per_chunk=5):
 
@@ -197,4 +226,4 @@ def process_pdf_v2(pdf_path: str):
         print(f"Input chunks: {total_input}")
         print(f"NIST chunks: {total_nist}")
 
-    return final_output
+    return format_final_output(final_output)

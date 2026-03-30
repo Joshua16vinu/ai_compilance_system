@@ -181,6 +181,8 @@ def analyze_gap_only(domain: str, text: str):
             "gap_analysis": [],
             "error": str(e)
         }
+
+        
 def generate_revised_policy(domain: str, text: str, gap_analysis: list):
     """
     STEP 2 — Revised policy generation using gap analysis output + original policy.

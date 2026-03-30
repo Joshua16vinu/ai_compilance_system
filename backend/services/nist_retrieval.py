@@ -140,7 +140,7 @@ def format_nist_chunks_for_prompt(records: list) -> str:
 def extract_query_keywords(query: str):
     return [w.lower() for w in query.split() if len(w) > 2]
 
-def keyword_search(query: str, top_k: int = 5):
+def keyword_search(query: str, top_k: int = 5, domain=None):
     query_keywords = extract_query_keywords(query)
 
     all_data = _collection.get(include=["documents", "metadatas"])
@@ -152,6 +152,10 @@ def keyword_search(query: str, top_k: int = 5):
         all_data["documents"],
         all_data["metadatas"]
     ):
+        # 🔥 STRICT DOMAIN FILTER FIRST
+        if domain and meta.get("domain") != domain:
+            continue
+
         text = doc.lower()
 
         match_score = sum(1 for q in query_keywords if q in text)
@@ -308,8 +312,15 @@ def hybrid_fetch_nist_records_version2(policy_text, domain=None, top_k=5):
             "score": similarity
         }
 
-    # Keyword
-    keyword_results = keyword_search(policy_text, top_k=5)
+    keyword_results = keyword_search(
+    policy_text,
+    top_k=5,
+    domain=domain   # 🔥 PASS DOMAIN HERE
+)
+   
+
+# 🔥 FILTER HERE
+    
 
     for r in keyword_results:
         if r["id"] in combined:
