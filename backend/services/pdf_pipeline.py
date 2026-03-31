@@ -149,7 +149,7 @@ def make_unique_and_distribute(final_output, max_per_chunk=5):
 # 🔹 MAIN PIPELINE
 # ============================================================
 
-def process_pdf_v2(pdf_path: str):
+def process_pdf_v2(pdf_path: str, user_domain=None):
 
     embedder = load_embedding_model()
 
@@ -172,8 +172,16 @@ def process_pdf_v2(pdf_path: str):
     for chunk in chunks:
 
     # 🔹 1. Domain classification
-     domain_info = classify_chunk_domains(chunk, embedder)
-     domains = domain_info["domains"]
+     # 🔹 1. Domain handling
+     if user_domain:
+        domains = [user_domain]   # force single domain
+        domain_info = {
+            "domains": domains,
+            "scores": {user_domain: 1.0}  # dummy score
+        }
+     else:
+        domain_info = classify_chunk_domains(chunk, embedder)
+        domains = domain_info["domains"]
 
      print("Domains:", domains)
 

@@ -50,6 +50,43 @@ def upload_pdf():
 
 
 
+# @upload_bp.route("/upload-pdf-v2", methods=["POST"])
+# def upload_pdf_v2():
+
+#     if "file" not in request.files:
+#         return Response("ERROR: No file part", status=400)
+
+#     file = request.files["file"]
+
+#     if file.filename == "":
+#         return Response("ERROR: No selected file", status=400)
+
+#     if not allowed_file(file.filename):
+#         return Response("ERROR: Only PDF allowed", status=400)
+
+#     upload_folder = current_app.config["UPLOAD_FOLDER"]
+#     os.makedirs(upload_folder, exist_ok=True)
+
+#     file_path = os.path.join(upload_folder, file.filename)
+#     file.save(file_path)
+
+#     try:
+#         result = process_pdf_v2(file_path)
+
+#     except Exception as e:
+#         return Response(
+#             f"ERROR: {str(e)}",
+#             status=500,
+#             mimetype="text/plain"
+#         )
+
+#     return Response(
+#         json.dumps(result, indent=2),
+#         mimetype="application/json",
+#         status=200
+#     )
+
+
 @upload_bp.route("/upload-pdf-v2", methods=["POST"])
 def upload_pdf_v2():
 
@@ -64,6 +101,9 @@ def upload_pdf_v2():
     if not allowed_file(file.filename):
         return Response("ERROR: Only PDF allowed", status=400)
 
+    # 🔹 NEW: get domain (optional)
+    user_domain = request.form.get("domain")  # e.g. "ISMS"
+
     upload_folder = current_app.config["UPLOAD_FOLDER"]
     os.makedirs(upload_folder, exist_ok=True)
 
@@ -71,7 +111,7 @@ def upload_pdf_v2():
     file.save(file_path)
 
     try:
-        result = process_pdf_v2(file_path)
+        result = process_pdf_v2(file_path, user_domain)
 
     except Exception as e:
         return Response(

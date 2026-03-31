@@ -333,6 +333,7 @@ def hybrid_fetch_nist_records_version2(policy_text, domain=None, top_k=5):
     return final_results[:top_k]
 
 def extract_relevant_text(records, query):
+    
     #print("\n✂️ [STEP 2] Sentence Extraction Started")
     embedder = load_embedding_model()
     query_embedding = embedder.encode(query)
