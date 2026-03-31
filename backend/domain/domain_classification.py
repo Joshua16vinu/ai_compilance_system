@@ -1,34 +1,132 @@
+# DOMAIN_KB = {
+#     "ISMS": [
+#         "information security management system policies audit compliance controls",
+#         "ISO 27001 governance security controls audit documentation risk governance",
+#         "organizational security policies procedures asset management access control"
+#     ],
+
+#     "Risk Management": [
+#         "risk assessment mitigation threats vulnerabilities likelihood impact",
+#         "risk analysis risk treatment enterprise risk management residual risk",
+#         "threat modeling vulnerability identification control effectiveness risk register"
+#     ],
+
+#     "Patch Management": [
+#         "software patching updates vulnerability fixes system updates",
+#         "patch deployment patch testing CVE fixes update management system hardening",
+#         "operating system updates application updates patch lifecycle management"
+#     ],
+
+#     "Data Privacy & Security": [
+#         "data protection privacy encryption personal data security controls",
+#         "GDPR compliance data confidentiality integrity access control PII protection",
+#         "data classification retention masking breach prevention privacy controls"
+#     ]
+# }
+
+
 DOMAIN_KB = {
+
+    # ----------------------------------------------------------
+    # 1. ISMS / GOVERNANCE
+    #    ISO 27001 Clauses 4-10 | NIST CSF: Govern (GV)
+    #    SP 800-53: PM, PL families
+    # ----------------------------------------------------------
     "ISMS": [
-        "information security management system policies audit compliance controls",
-        "ISO 27001 governance security controls audit documentation risk governance",
-        "organizational security policies procedures asset management access control"
+        "information security management system ISMS governance framework policy",
+        "ISO 27001 security policy statement scope objectives management review",
+        "organizational security governance audit compliance controls documentation",
+        "information security roles responsibilities accountability senior leadership",
+        "ISMS scope continual improvement corrective action nonconformity",
+        "security policy approval communication review update periodic",
+        "statement of applicability SoA risk treatment plan ISMS controls",
+        "cybersecurity strategy enterprise risk tolerance organizational context",
+        "NIST CSF govern function policy oversight cybersecurity program",
+        "security committee steering group CISO board reporting governance",
     ],
 
+    # ----------------------------------------------------------
+    # 2. RISK MANAGEMENT
+    #    NIST SP 800-30 Rev.1 | ISO 27001 Clause 6 | CSF: Identify (ID.RA)
+    #    SP 800-53: RA family
+    # ----------------------------------------------------------
     "Risk Management": [
-        "risk assessment mitigation threats vulnerabilities likelihood impact",
-        "risk analysis risk treatment enterprise risk management residual risk",
-        "threat modeling vulnerability identification control effectiveness risk register"
+        "risk assessment identification evaluation treatment mitigation likelihood impact",
+        "risk register residual risk appetite tolerance acceptance transfer avoidance",
+        "threat modeling vulnerability identification threat intelligence risk analysis",
+        "enterprise risk management ERM inherent risk control effectiveness",
+        "risk treatment plan risk owner risk review periodic reassessment",
+        "qualitative quantitative risk scoring heat map risk matrix",
+        "business impact analysis BIA critical asset risk prioritization",
+        "supply chain risk third party vendor risk assessment outsourcing",
+        "NIST SP 800-30 risk assessment guide RA-3 RA-5 risk monitoring",
+        "cyber risk appetite statement risk tolerance organizational risk posture",
     ],
 
-    "Patch Management": [
-        "software patching updates vulnerability fixes system updates",
-        "patch deployment patch testing CVE fixes update management system hardening",
-        "operating system updates application updates patch lifecycle management"
+    # ----------------------------------------------------------
+    # 3. ACCESS CONTROL
+    #    NIST SP 800-53: AC family | ISO 27001: A.5.15-A.5.18, A.8.2-A.8.6
+    #    CSF: Protect (PR.AA)
+    # ----------------------------------------------------------
+    "Access Control": [
+        "access control user access management role based access control RBAC",
+        "least privilege need to know access rights provisioning deprovisioning",
+        "authentication MFA multi factor authentication password policy SSO",
+        "authorization permissions access review recertification entitlements",
+        "privileged access management PAM admin accounts elevated rights",
+        "identity access management IAM user lifecycle joiner mover leaver",
+        "session management timeout logout inactivity lock screen",
+        "remote access VPN zero trust network access ZTNA",
+        "single sign on federated identity SAML OAuth directory services AD LDAP",
+        "access control list ACL firewall rules network segmentation VLAN",
     ],
 
+    # ----------------------------------------------------------
+    # 4. DATA PROTECTION & PRIVACY
+    #    ISO 27001: A.5.33, A.8.11-A.8.12 | GDPR | NIST SP 800-188
+    #    SP 800-53: SI, MP families | CSF: Protect (PR.DS)
+    # ----------------------------------------------------------
     "Data Privacy & Security": [
-        "data protection privacy encryption personal data security controls",
-        "GDPR compliance data confidentiality integrity access control PII protection",
-        "data classification retention masking breach prevention privacy controls"
+        "data protection privacy personal data PII sensitive information handling",
+        "data classification public internal confidential restricted secret",
+        "GDPR data subject rights lawful basis processing privacy notice consent",
+        "data retention deletion disposal secure erasure media sanitization",
+        "encryption at rest in transit TLS SSL AES key management PKI",
+        "data masking tokenization anonymization pseudonymization",
+        "data loss prevention DLP exfiltration prevention data leakage",
+        "privacy by design data minimization purpose limitation storage limitation",
+        "cross border data transfer adequacy decision standard contractual clauses",
+        "PII inventory data mapping data flow diagram DPIA privacy impact assessment",
     ]
 }
+# DOMAIN_KEYWORDS = {
+#     "ISMS": ["policy", "audit", "compliance", "control", "governance"],
+#     "Risk Management": ["risk", "threat", "vulnerability", "impact", "likelihood"],
+#     "Patch Management": ["patch", "update", "fix", "vulnerability", "upgrade"],
+#     "Data Privacy & Security": ["data", "privacy", "encryption", "pii", "confidential"]
+# }
 
 DOMAIN_KEYWORDS = {
-    "ISMS": ["policy", "audit", "compliance", "control", "governance"],
-    "Risk Management": ["risk", "threat", "vulnerability", "impact", "likelihood"],
-    "Patch Management": ["patch", "update", "fix", "vulnerability", "upgrade"],
-    "Data Privacy & Security": ["data", "privacy", "encryption", "pii", "confidential"]
+    "ISMS": [
+        "policy", "governance", "audit", "compliance", "isms",
+        "framework", "control", "iso 27001", "management system",
+        "scope", "review", "documentation", "oversight", "program",
+    ],
+    "Risk Management": [
+        "risk", "threat", "vulnerability", "likelihood", "impact",
+        "residual", "mitigation", "treatment", "register", "appetite",
+        "tolerance", "assessment", "analyze", "hazard", "exposure",
+    ],
+    "Access Control": [
+        "access", "authentication", "authorization", "permission",
+        "rbac", "privilege", "identity", "role", "entitlement",
+        "password", "mfa", "session", "login", "credential",
+    ],
+    "Data Privacy & Security": [
+        "data", "privacy", "pii", "personal", "confidential",
+        "gdpr", "encryption", "classification", "retention", "masking",
+        "breach", "consent", "processing", "sensitive", "disclosure",
+    ]
 }
 
 import numpy as np
